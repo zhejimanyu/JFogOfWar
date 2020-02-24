@@ -1,0 +1,66 @@
+﻿# =============== #
+# Unity generated #
+# =============== #
+Temp/
+Obj/
+UnityGenerated/
+AssetBundle/
+Library/
+AssetBundle/
+Assets/AssetStoreTools*
+Assets/Resources/buildNumber.txt
+Assets/Resources/buildNumber.txt.meta
+Assets/StreamingAssets/buildNumber.txt
+Assets/StreamingAssets/buildNumber.txt.meta
+Assets/StreamingAssets/build_info.txt
+Assets/StreamingAssets/build_info.txt.meta
+Assets/Test/*
+Assets/Test.meta
+GameBuild/
+Assets/AssetBundles/HotfixBundle/B_Bundle2/B_Bundle3/B_Bundle4/Temp.meta
+# JetBrains
+.idea
+Assets/Plugins/Editor/JetBrains/*
+Assets/Plugins/Editor/JetBrains.meta
+
+# ===================================== #
+# Visual Studio / MonoDevelop generated #
+# ===================================== #
+ExportedObj/
+*.svd
+*.userprefs
+*.csproj
+*.pidb
+*.suo
+*.sln
+*.user
+*.unityproj
+*.booproj
+
+# vs 工程自动生成文件
+.vs
+
+# ============ #
+# OS generated #
+# ============ #
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+#Icon?
+ehthumbs.db
+Thumbs.db
+
+
+#build
+build/*
+
+#vscode
+
+.vscode
+
+#frameworks
+
+Assets/Codes/Frameworks/*
+Assets/Codes/Frameworks.meta
