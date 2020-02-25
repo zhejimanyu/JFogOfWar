@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-interface IFOWFieldViewer
+public interface IFOWFieldViewer
 {
     /// <summary>
     /// 获取视野中心位置
@@ -32,6 +32,13 @@ public class JFOWFieldViewer : MonoBehaviour, IFOWFieldViewer
 {
     [SerializeField]
     float m_Radius;
+    Vector3 m_Pos;
+
+    private void Update()
+    {
+        if (m_Pos != transform.position)
+            m_Pos = transform.position;
+    }
 
     bool m_IsValid = false;
 
@@ -40,6 +47,9 @@ public class JFOWFieldViewer : MonoBehaviour, IFOWFieldViewer
         m_IsValid = false;
     }
 
+    /// <summary>
+    /// 队友则设置为有效的，敌人则设置为无效的
+    /// </summary>
     public void SetValid()
     {
         m_IsValid = true;
@@ -47,7 +57,7 @@ public class JFOWFieldViewer : MonoBehaviour, IFOWFieldViewer
 
     public Vector3 GetPos()
     {
-        return transform.position;
+        return m_Pos;
     }
 
     public float GetRadius()
@@ -57,6 +67,8 @@ public class JFOWFieldViewer : MonoBehaviour, IFOWFieldViewer
 
     public bool IsVisiable(Vector3 pos)
     {
+        if (!m_IsValid)
+            return false;
         return m_Radius >= Vector3.Distance(pos, transform.position);
     }
 

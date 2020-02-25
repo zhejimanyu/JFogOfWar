@@ -462,11 +462,12 @@ public class FOWSystem : MonoSingleton<FOWSystem>
 
                 val += mBuffer1[x0 + yw].r;
                 val += mBuffer1[x1 + yw].r;
-                val += mBuffer1[x + yw0].r;
-                val += mBuffer1[x + yw1].r;
 
+                val += mBuffer1[x + yw0].r;
                 val += mBuffer1[x0 + yw0].r;
                 val += mBuffer1[x1 + yw0].r;
+
+                val += mBuffer1[x + yw1].r;
                 val += mBuffer1[x0 + yw1].r;
                 val += mBuffer1[x1 + yw1].r;
 
