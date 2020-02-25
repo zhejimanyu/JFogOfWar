@@ -22,7 +22,6 @@ public class JFOWSystem : MonoBehaviour
     }
 
     List<IFOWFieldViewer> m_Viewer = new List<IFOWFieldViewer>();
-
     List<IFOWFieldViewer> m_Adds = new List<IFOWFieldViewer>();
     List<IFOWFieldViewer> m_Removes = new List<IFOWFieldViewer>();
 
@@ -35,8 +34,13 @@ public class JFOWSystem : MonoBehaviour
 
     State m_State = State.Wait;
 
-    int m_WorldSize = 512;
+    float m_WorldSize = 512;
     int m_TextureSize = 512;
+
+    /// <summary>
+    /// 视野体半径偏移,修改该值可增加或减少可视半径
+    /// </summary>
+    public float radiusOffset = 0f;
 
     float m_UpdateInterval = 0.3f;
 
@@ -45,6 +49,11 @@ public class JFOWSystem : MonoBehaviour
     float m_TexSizeDivideWorldSize;
 
     Thread m_Thread;
+
+    /// <summary>
+    /// 地图左下角原点
+    /// </summary>
+    Vector3 m_Origin;
 
     void AddFieldViewer(IFOWFieldViewer viewer)
     {
@@ -59,17 +68,30 @@ public class JFOWSystem : MonoBehaviour
 
     private void Start()
     {
-        m_Buffer0 = new Color32[m_TextureSize * m_TextureSize];
-        m_TexSizeDivideWorldSize = m_TextureSize / m_WorldSize;
+        Init();
 
         m_Thread = new Thread(ThreadCheckUpdate);
         m_Thread.Start();
     }
 
+    void Init()
+    {
+        m_Buffer0 = new Color32[m_TextureSize * m_TextureSize];
+        m_TexSizeDivideWorldSize = m_TextureSize / m_WorldSize;
+        m_Origin = transform.position - new Vector3(m_WorldSize / 2, 0, m_WorldSize / 2);
+        m_Viewer.Clear();
+        m_Removes.Clear();
+        m_Adds.Clear();
+    }
+
     bool m_ThreadWork;
 
-    System.Diagnostics.Stopwatch m_SW = new System.Diagnostics.Stopwatch();
-    public float consumeTime;
+    System.Diagnostics.Stopwatch m_SW;
+    /// <summary>
+    /// 耗时
+    /// </summary>
+    [SerializeField]
+    float consumeTime;
 
     void ThreadCheckUpdate()
     {
@@ -129,27 +151,46 @@ public class JFOWSystem : MonoBehaviour
         //计算当前可见范围
         ResetBuffer(m_Buffer0, "g");
         for (int i = 0; i < m_Viewer.Count; ++i)
-            SetCurVisible(m_Viewer[i]);
-        //
+            CalCurVisible(m_Viewer[i]);
+        //模糊
+        //叠加
+        //记录上一帧可见区域
     }
 
-    void SetCurVisible(IFOWFieldViewer viewer)
+    void CalCurVisible(IFOWFieldViewer viewer)
     {
         if (!viewer.IsValid()) return;
 
-        Vector3 pos = viewer.GetPos();
-        float radius = viewer.GetRadius();
+        //纹理点 = 世界点 * 纹理宽/世界宽
+        Vector3 texPos = (viewer.GetPos() - m_Origin) * m_TexSizeDivideWorldSize;
+        texPos = new Vector3(Mathf.Clamp(texPos.x, 0, m_TextureSize), 0, Mathf.Clamp(texPos.z, 0, m_TextureSize));
 
-        int minX = viewer.GetMinX();
-        int minY = viewer.GetMinY();
-        int maxX = viewer.GetMaxX(m_WorldSize);
-        int maxY = viewer.GetMaxY(m_WorldSize);
+        float texRadius = viewer.GetRadius() * m_TexSizeDivideWorldSize + radiusOffset;
+        texRadius = Mathf.Clamp(texRadius, 0, m_TextureSize);
+
+        //只处理视野体可视半径范围内的坐标
+        //RoundToInt返回四舍五入到最接近的整数的f
+        int minX = Mathf.RoundToInt(texPos.x - texRadius);
+        int maxX = Mathf.RoundToInt(texPos.x + texRadius);
+        int minY = Mathf.RoundToInt(texPos.z - texRadius);
+        int maxY = Mathf.RoundToInt(texPos.z + texRadius);
+        minX = Mathf.Clamp(minX, 0, m_TextureSize);
+        minY = Mathf.Clamp(minY, 0, m_TextureSize);
+        maxX = Mathf.Clamp(maxX, 0, m_TextureSize);
+        maxY = Mathf.Clamp(maxY, 0, m_TextureSize);
+
+        float distSqrt = 0f;
+        float radiusSqrt = texRadius * texRadius;
 
         for (int i = minX; i < maxX; ++i)
         {
             for (int j = minY; j < maxY; ++j)
             {
-                m_Buffer0[(i - 1) * m_TextureSize + j].g = (byte)(viewer.IsVisiable(new Vector2(i, j)) ? 255 : 0);
+                distSqrt = (i - texPos.x) * (i - texPos.x) + (j - texPos.y) * (j - texPos.y);
+                if (distSqrt <= radiusSqrt)
+                {
+                    m_Buffer0[(i - 1) * m_TextureSize + (j - 1)].g = 255;
+                }
             }
         }
     }
