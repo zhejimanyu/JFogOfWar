@@ -507,6 +507,16 @@ Prefab:
       propertyPath: unExploredColor.b
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 114845061962209164, guid: e76e39dabea48784bbc297538406a7b6,
+        type: 2}
+      propertyPath: unExploredColor.a
+      value: 255
+      objectReference: {fileID: 0}
+    - target: {fileID: 114845061962209164, guid: e76e39dabea48784bbc297538406a7b6,
+        type: 2}
+      propertyPath: exploredColor.a
+      value: 0.78431374
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e76e39dabea48784bbc297538406a7b6, type: 2}
   m_IsPrefabAsset: 0
@@ -633,12 +643,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   radiusOffset: 0
+  updateInterval: 0.1
   enableRender: 1
   enableFog: 1
   m_BlendFactor: 0
-  texBlendTime: 0.5
+  texBlendTime: 0.05
   blurIterations: 2
   consumeTime: 0
+  blurOffset: 2
 --- !u!4 &1512071949
 Transform:
   m_ObjectHideFlags: 0

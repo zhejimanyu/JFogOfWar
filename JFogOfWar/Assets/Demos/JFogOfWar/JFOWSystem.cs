@@ -5,6 +5,7 @@
  * 迷雾渲染器
  * buffer0,buffer1,buffer2三个缓冲
  * buffer0.r：当前所有已探索区域，buffer0.g:这一帧的可见区域，buffer.b:上一帧的可见区域，buffer.a：用于模糊处理的临时缓存
+ * 缺點：效果不怎么好
 */
 using System.Collections;
 using System.Collections.Generic;
@@ -43,7 +44,7 @@ public class JFOWSystem : MonoSingleton<JFOWSystem>
     /// </summary>
     public float radiusOffset = 0f;
 
-    float m_UpdateInterval = 0.3f;
+    public float updateInterval = 0.3f;
 
     float m_UpdateTimer = 0;
 
@@ -103,9 +104,8 @@ public class JFOWSystem : MonoSingleton<JFOWSystem>
     private void Start()
     {
         Init();
-
-        m_Thread = new Thread(ThreadCheckUpdate);
-        m_Thread.Start();
+        //m_Thread = new Thread(ThreadCheckUpdate);
+        //m_Thread.Start();
     }
 
     protected override void Init()
@@ -116,6 +116,9 @@ public class JFOWSystem : MonoSingleton<JFOWSystem>
         m_Viewer.Clear();
         m_Removes.Clear();
         m_Adds.Clear();
+
+        if (m_SW == null)
+            m_SW = new System.Diagnostics.Stopwatch();
     }
 
     private void Update()
@@ -130,7 +133,7 @@ public class JFOWSystem : MonoSingleton<JFOWSystem>
             float time = Time.time;
             if (m_UpdateTimer < time)
             {
-                m_UpdateTimer = time + m_UpdateInterval;
+                m_UpdateTimer = time + updateInterval;
                 m_State = State.NeedUpdate;
             }
         }
@@ -138,14 +141,16 @@ public class JFOWSystem : MonoSingleton<JFOWSystem>
         {
             UpdateTexture();
         }
+
+        if (m_State == State.NeedUpdate)
+        {
+            consumeTime = GetWatchSec(m_SW, UpdateBuffer);
+        }
     }
 
     void ThreadCheckUpdate()
     {
         //计算耗时
-        if (m_SW == null)
-            m_SW = new System.Diagnostics.Stopwatch();
-
         while (m_ThreadWork)
         {
             if (!m_ThreadWork)
@@ -158,7 +163,7 @@ public class JFOWSystem : MonoSingleton<JFOWSystem>
             Thread.Sleep(1);
         }
     }
-    
+
     /// <summary>
     /// 计算耗时
     /// </summary>
@@ -197,10 +202,10 @@ public class JFOWSystem : MonoSingleton<JFOWSystem>
         }
 
         //float factor = (texBlendTime > 0f) ? Mathf.Clamp01(m_BlendFactor + consumeTime / texBlendTime) : 1f;
-    
+        //factor = 1f;
         //for (int i = 0; i < m_Buffer0.Length; ++i)
         //{
-        //    m_Buffer0[i].g = (byte)Mathf.Lerp(m_Buffer0[i].b, m_Buffer0[i].g, factor);
+        //    m_Buffer0[i].r = (byte)Mathf.Lerp(m_Buffer0[i].b, m_Buffer0[i].r, factor);
         //}
 
         //记录上一帧可见区域
@@ -213,11 +218,11 @@ public class JFOWSystem : MonoSingleton<JFOWSystem>
 
         //模糊
         for (int i = 0; i < blurIterations; ++i)
-            BlurVisible();
+            BlurVisible(m_Viewer[0]);
 
         //叠加
         OverlayBuffer();
-        
+
         m_State = State.UpdateTexture;
     }
 
@@ -225,7 +230,8 @@ public class JFOWSystem : MonoSingleton<JFOWSystem>
     {
         for (int i = 0; i < m_Buffer0.Length; ++i)
         {
-            m_Buffer0[i].b = m_Buffer0[i].a;
+            //m_Buffer0[i].b = m_Buffer0[i].a;
+            m_Buffer0[i].b = m_Buffer0[i].r;
         }
     }
 
@@ -277,8 +283,8 @@ public class JFOWSystem : MonoSingleton<JFOWSystem>
         //}
 
         //相对于战争迷雾的位置
-        Vector3 pos = (viewer.GetPos() - m_Origin) * m_TexSizeDivideWorldSize;//纹理上的坐标
-        float radius = viewer.GetRadius() * m_TexSizeDivideWorldSize - radiusOffset;//纹理上的半径
+        Vector3 pos = (viewer.GetPos() - m_Origin) * m_TexSizeDivideWorldSize;//纹理上的坐标        
+        float radius = viewer.GetRadius() * m_TexSizeDivideWorldSize + radiusOffset;//纹理上的半径
 
         // Coordinates we'll be dealing with
         //我们将要处理的坐标
@@ -311,7 +317,7 @@ public class JFOWSystem : MonoSingleton<JFOWSystem>
                         int dist = xd * xd + yd * yd;
 
                         // Reveal this pixel
-                        if (dist < radiusSqr)
+                        if (dist <= radiusSqr)
                         {
                             m_Buffer0[x + yw].g = 255;
                         }
@@ -321,10 +327,12 @@ public class JFOWSystem : MonoSingleton<JFOWSystem>
         }
     }
 
+    public int blurOffset = 1;
+
     /// <summary>
     /// 在一维数组中取索引：index = y+x*w //w为列数，x和y为水平竖直索引
     /// </summary>
-    void BlurVisible()
+    void BlurVisible(IFOWFieldViewer viewer)
     {
         //float maxValue = 0;
         //for (int i = 0; i < m_TextureSize; ++i)
@@ -370,12 +378,20 @@ public class JFOWSystem : MonoSingleton<JFOWSystem>
         //Debug.LogError("blur 2@@@@@@@@ maxValue:" + maxValue);
 
 
+        float radius = viewer.GetRadius() * m_TexSizeDivideWorldSize + radiusOffset;//纹理上的半径
+        int radiusSqr = Mathf.RoundToInt(radius * radius);
+        Vector3 pos = (viewer.GetPos() - m_Origin) * m_TexSizeDivideWorldSize;//纹理上的坐标
+        int cx = Mathf.RoundToInt(pos.x);
+        int cy = Mathf.RoundToInt(pos.z);
+
+        int maxIndex = m_Buffer0.Length - 1;
+
         for (int y = 0; y < m_TextureSize; ++y)
         {
             int yw = y * m_TextureSize;
-            int yw0 = (y - 1);
+            int yw0 = (y - blurOffset);
             if (yw0 < 0) yw0 = 0;
-            int yw1 = (y + 1);
+            int yw1 = (y + blurOffset);
             if (yw1 == m_TextureSize) yw1 = y;
 
             yw0 *= m_TextureSize;
@@ -383,26 +399,33 @@ public class JFOWSystem : MonoSingleton<JFOWSystem>
 
             for (int x = 0; x < m_TextureSize; ++x)
             {
-                int x0 = (x - 1);
-                if (x0 < 0) x0 = 0;
-                int x1 = (x + 1);
-                if (x1 == m_TextureSize) x1 = x;
+                int xd = x - cx;
+                int yd = y - cy;
+                int dist = xd * xd + yd * yd;
+                if (dist <= radiusSqr)
+                {
+                    int x0 = (x - blurOffset);
+                    if (x0 < 0) x0 = 0;
+                    int x1 = (x + blurOffset);
+                    if (x1 == m_TextureSize) x1 = x;
 
-                int index = x + yw;
-                int val = m_Buffer0[index].g;
+                    int index = x + yw;
+                    int val = m_Buffer0[index].g;
 
-                val += m_Buffer0[x0 + yw].g;
-                val += m_Buffer0[x1 + yw].g;
+                    val += m_Buffer0[Mathf.Clamp(x0 + yw,0, maxIndex)].g;
+                    val += m_Buffer0[Mathf.Clamp(x1 + yw, 0, maxIndex)].g;
 
-                val += m_Buffer0[x + yw0].g;
-                val += m_Buffer0[x0 + yw0].g;
-                val += m_Buffer0[x1 + yw0].g;
+                    val += m_Buffer0[Mathf.Clamp(x + yw0, 0, maxIndex)].g;
+                    val += m_Buffer0[Mathf.Clamp(x0 + yw0, 0, maxIndex)].g;
+                    val += m_Buffer0[Mathf.Clamp(x1 + yw0, 0, maxIndex)].g;
 
-                val += m_Buffer0[x + yw1].g;
-                val += m_Buffer0[x0 + yw1].g;
-                val += m_Buffer0[x1 + yw1].g;
+                    val += m_Buffer0[Mathf.Clamp(x + yw1, 0, maxIndex)].g;
+                    val += m_Buffer0[Mathf.Clamp(x0 + yw1, 0, maxIndex)].g;
+                    val += m_Buffer0[Mathf.Clamp(x1 + yw1, 0, maxIndex)].g;
 
-                m_Buffer0[index].a = (byte)(val / 9);
+                    m_Buffer0[index].a = (byte)(val / 9);
+                    m_Buffer0[index].g = m_Buffer0[index].a;
+                }
             }
         }
     }
@@ -411,8 +434,10 @@ public class JFOWSystem : MonoSingleton<JFOWSystem>
     {
         for (int i = 0; i < m_Buffer0.Length; ++i)
         {
-            m_Buffer0[i].r += m_Buffer0[i].a;
-            m_Buffer0[i].r = (byte)(Mathf.Clamp(m_Buffer0[i].r, 0, 255));
+            if (m_Buffer0[i].r < m_Buffer0[i].a)
+            {
+                m_Buffer0[i].r = m_Buffer0[i].a;
+            }
         }
     }
 
@@ -482,5 +507,15 @@ public class JFOWSystem : MonoSingleton<JFOWSystem>
         y = Mathf.Clamp(y, 0, m_TextureSize);
 
         return m_Buffer0[y + x * m_TextureSize].g > 0;
+    }
+
+    public void ReseTexture()
+    {
+        Color32 c = new Color32(0,0,0,0);
+        for (int i = 0; i < m_Buffer0.Length; ++i)
+            m_Buffer0[i] = c;
+
+        m_Texture.SetPixels32(m_Buffer0);
+        m_Texture.Apply();
     }
 }

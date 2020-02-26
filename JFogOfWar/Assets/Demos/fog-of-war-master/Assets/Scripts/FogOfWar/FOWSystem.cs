@@ -346,11 +346,11 @@ public class FOWSystem : MonoSingleton<FOWSystem>
         //这样做有助于避免由于混合结果落后X毫秒而导致混合中的可见变化。
         float factor = (textureBlendTime > 0f) ? Mathf.Clamp01(mBlendFactor + mElapsed / textureBlendTime) : 1f;
 
-        // Clear the buffer's red channel (channel used for current visibility -- it's updated right after)
-        //清除缓冲区的红色通道（用于当前可见性的通道-此通道将在之后立即更新）
+        //// Clear the buffer's red channel (channel used for current visibility -- it's updated right after)
+        ////清除缓冲区的红色通道（用于当前可见性的通道-此通道将在之后立即更新）
         for (int i = 0, imax = mBuffer0.Length; i < imax; ++i)
         {
-            mBuffer0[i] = Color32.Lerp(mBuffer0[i], mBuffer1[i],factor);
+            mBuffer0[i] = Color32.Lerp(mBuffer0[i], mBuffer1[i], factor);
             mBuffer1[i].r = 0;
         }
 
