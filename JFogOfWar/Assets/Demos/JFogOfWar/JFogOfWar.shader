@@ -41,7 +41,7 @@
 
 			fixed4 frag(v2f i) :SV_Target
 			{
-				half4 texColor = tex2D(_MainTex,i.uv);
+				half4 texColor = tex2D(_MainTex,1-i.uv);
 				half fogValue = lerp(texColor.b,texColor.g,_BlendFactor);
 				half4 color = lerp(_UnExplored,_Explored,fogValue);
 				color.a = (1-fogValue) * color.a;//越是可见的部分越是透明（不显示遮罩网格的颜色）

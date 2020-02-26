@@ -196,12 +196,12 @@ public class JFOWSystem : MonoSingleton<JFOWSystem>
             }
         }
 
-        float factor = (texBlendTime > 0f) ? Mathf.Clamp01(m_BlendFactor + consumeTime / texBlendTime) : 1f;
+        //float factor = (texBlendTime > 0f) ? Mathf.Clamp01(m_BlendFactor + consumeTime / texBlendTime) : 1f;
     
-        for (int i = 0; i < m_Buffer0.Length; ++i)
-        {
-            m_Buffer0[i].g = (byte)Mathf.Lerp(m_Buffer0[i].b, m_Buffer0[i].g, factor);
-        }
+        //for (int i = 0; i < m_Buffer0.Length; ++i)
+        //{
+        //    m_Buffer0[i].g = (byte)Mathf.Lerp(m_Buffer0[i].b, m_Buffer0[i].g, factor);
+        //}
 
         //记录上一帧可见区域
         ResetLastVisable();
@@ -228,9 +228,6 @@ public class JFOWSystem : MonoSingleton<JFOWSystem>
             m_Buffer0[i].b = m_Buffer0[i].a;
         }
     }
-
-    int maxCount = 100;
-    int curCount = 0;
 
     void CalCurVisible(IFOWFieldViewer viewer)
     {
@@ -279,8 +276,6 @@ public class JFOWSystem : MonoSingleton<JFOWSystem>
         //    }
         //}
 
-
-
         //相对于战争迷雾的位置
         Vector3 pos = (viewer.GetPos() - m_Origin) * m_TexSizeDivideWorldSize;//纹理上的坐标
         float radius = viewer.GetRadius() * m_TexSizeDivideWorldSize - radiusOffset;//纹理上的半径
@@ -316,7 +311,10 @@ public class JFOWSystem : MonoSingleton<JFOWSystem>
                         int dist = xd * xd + yd * yd;
 
                         // Reveal this pixel
-                        if (dist < radiusSqr) m_Buffer0[x + yw].g = 255;
+                        if (dist < radiusSqr)
+                        {
+                            m_Buffer0[x + yw].g = 255;
+                        }
                     }
                 }
             }
